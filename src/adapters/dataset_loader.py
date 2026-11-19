@@ -120,7 +120,7 @@ class DatasetLoader:
             try:
                 # Read via pandas for robust chunking and encoding detection
                 df = pd.read_csv(input_file, nrows=limit if limit else None)
-                with open(output_jsonl, "a", encoding="utf-8") as out_f:
+                with open(output_jsonl, "w", encoding="utf-8") as out_f:
                     for idx, row in df.iterrows():
                         row_dict = row.to_dict()
                         
@@ -136,11 +136,12 @@ class DatasetLoader:
 
                         # Identify timestamp
                         dt_val = "2024-02-14T10:00:00Z"
-                        for date_col in ["date", "created_at", "published_at", "timestamp", "tanggal"]:
+                        for date_col in ["date", "created_at", "published_at", "timestamp", "tanggal", "tanggal_berita", "waktu"]:
                             if date_col in row_dict and pd.notna(row_dict[date_col]):
                                 dt_raw = str(row_dict[date_col]).strip()
                                 try:
-                                    dt_parsed = pd.to_datetime(dt_raw)
+                                    is_year_first = dt_raw[:4].isdigit() and (len(dt_raw) > 4 and dt_raw[4] in ["-", "/"])
+                                    dt_parsed = pd.to_datetime(dt_raw, dayfirst=not is_year_first)
                                     dt_val = dt_parsed.strftime("%Y-%m-%dT%H:%M:%SZ")
                                     break
                                 except Exception:
@@ -156,16 +157,30 @@ class DatasetLoader:
                                 except Exception:
                                     pass
 
+                        # Identify author / outlet
+                        author_val = "public_dataset"
+                        for auth_col in ["asal_berita", "author", "username", "source", "media", "sumber"]:
+                            if auth_col in row_dict and pd.notna(row_dict[auth_col]):
+                                author_val = str(row_dict[auth_col]).strip()
+                                break
+
+                        # Identify URL / link
+                        url_val = ""
+                        for link_col in ["link_berita", "url", "link"]:
+                            if link_col in row_dict and pd.notna(row_dict[link_col]):
+                                url_val = str(row_dict[link_col]).strip()
+                                break
+
                         rec_id = f"ext_{source_name}_{idx+1:06d}"
                         record = {
                             "id": rec_id,
                             "source": source_name,
-                            "title": text_val[:80],
+                            "title": str(row_dict.get("title") or text_val[:80]),
                             "text": text_val,
                             "caption": text_val[:120],
-                            "author_username": str(row_dict.get("author") or row_dict.get("username") or row_dict.get("source") or "public_dataset"),
+                            "author_username": author_val,
                             "published_at": dt_val,
-                            "url": str(row_dict.get("url") or row_dict.get("link") or ""),
+                            "url": url_val,
                             "engagement": {
                                 "upvotes": score,
                                 "score": score,

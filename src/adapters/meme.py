@@ -109,6 +109,7 @@ class MemeAdapter(BaseAdapter):
             sys.executable, "-m", "gallery_dl",
             "--directory", str(self.raw_img_dir),
             "--write-metadata",
+            "--sleep-request", "3",
             "--filter", "extension in ('jpg', 'png', 'jpeg')",
             "--range", f"1-{limit}",
             target_url,
