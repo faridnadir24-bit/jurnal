@@ -85,6 +85,7 @@ sources:
   reddit:
     enabled: true
     subreddits:
+      - "indonesiameme"
       - "indonesia"
     queries:
       - "pilpres 2024"
@@ -124,6 +125,7 @@ sources:
       - "meme fufufafa dinasti"
       - "meme pilpres jokowi"
     subreddits:
+      - "indonesiameme"
       - "indonesia"
     flair_filter:
       - "Meme"

@@ -1,9 +1,13 @@
 import hashlib
 import logging
-from datetime import datetime
+import os
+import shutil
+import urllib.parse
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, Generator, Optional
-from PIL import Image, ImageDraw, ImageFont
+from typing import Dict, Any, Generator, Optional, List
+import requests
+import praw
 from src.adapters.base import BaseAdapter
 
 logger = logging.getLogger("scraper.meme")
@@ -11,10 +15,16 @@ logger = logging.getLogger("scraper.meme")
 
 class MemeAdapter(BaseAdapter):
     """
-    Multimodal adapter for political memes (Pemilu 2024).
-    Collects/synthesizes political meme images, captions, and multimodal metadata.
-    Saves raw images and computes image-level cryptographic hashes (SHA-256).
+    Multimodal meme adapter using PRAW (Reddit API).
+    Fetches genuine meme posts from r/indonesiameme and r/indonesia,
+    filters by political keywords ('pemilu', 'pilpres', 'capres', 'ganjar', 'prabowo', 'anies'),
+    and downloads original image assets directly to data/raw/memes/.
+    NEVER generates synthetic or dummy images using Pillow.
     """
+
+    KEYWORDS = ["pemilu", "pilpres", "capres", "ganjar", "prabowo", "anies"]
+    TARGET_SUBREDDITS = ["indonesiameme", "indonesia"]
+    ALLOWED_EXTENSIONS = (".jpg", ".png", ".jpeg")
 
     def __init__(self, raw_img_dir: Path, processed_img_dir: Path, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -23,129 +33,210 @@ class MemeAdapter(BaseAdapter):
         self.raw_img_dir.mkdir(parents=True, exist_ok=True)
         self.processed_img_dir.mkdir(parents=True, exist_ok=True)
 
-        self.queries = self.config.get("queries", ["meme pemilu 2024"])
-        self.min_width = self.config.get("min_image_width", 200)
-        self.min_height = self.config.get("min_image_height", 200)
+        self.user_agent = (
+            os.getenv("REDDIT_USER_AGENT")
+            or self.config.get("user_agent")
+            or "IndonesianPoliticalPolarizationScraper/1.0 (Academic Research; contact: research.pemilu2024@gmail.com)"
+        )
+        self.client_id = os.getenv("REDDIT_CLIENT_ID") or self.config.get("client_id")
+        self.client_secret = os.getenv("REDDIT_CLIENT_SECRET") or self.config.get("client_secret")
 
-    def _render_meme_image(self, meme_id: str, top_text: str, bottom_text: str, category: str) -> Path:
+        # Load credentials from config/credentials.yaml if present
+        if not (self.client_id and self.client_secret):
+            creds_file = Path("config/credentials.yaml")
+            if creds_file.exists():
+                try:
+                    import yaml
+                    with open(creds_file, "r", encoding="utf-8") as f:
+                        creds = yaml.safe_load(f) or {}
+                        reddit_creds = creds.get("reddit", {})
+                        self.client_id = self.client_id or reddit_creds.get("client_id")
+                        self.client_secret = self.client_secret or reddit_creds.get("client_secret")
+                        self.user_agent = self.user_agent or reddit_creds.get("user_agent")
+                except Exception as e:
+                    logger.warning(f"Could not load credentials.yaml: {e}")
+
+        # Initialize PRAW
+        self.reddit = self._init_praw()
+
+    def _init_praw(self) -> Optional[praw.Reddit]:
+        """Initializes Reddit instance via PRAW in read-only mode."""
+        try:
+            reddit = praw.Reddit(
+                client_id=self.client_id or "placeholder_id",
+                client_secret=self.client_secret or "placeholder_secret",
+                user_agent=self.user_agent,
+                check_for_updates=False,
+            )
+            reddit.read_only = True
+            return reddit
+        except Exception as e:
+            logger.error(f"Failed to initialize PRAW: {e}")
+            return None
+
+    def _matches_keywords(self, title: str, text: str) -> List[str]:
+        """Checks if title or text contains any of the required election keywords."""
+        content = f"{title or ''} {text or ''}".lower()
+        return [kw for kw in self.KEYWORDS if kw in content]
+
+    def _is_direct_image_url(self, url: str) -> bool:
+        """Ensures the post URL points directly to an image (.jpg, .png, .jpeg)."""
+        if not url:
+            return False
+        parsed = urllib.parse.urlparse(url)
+        path = parsed.path.lower()
+        return path.endswith(self.ALLOWED_EXTENSIONS)
+
+    def _download_original_image(self, image_url: str, post_id: str) -> Optional[Dict[str, Any]]:
         """
-        Renders a valid, clean PNG meme image for multimodal research.
-        Ensures full reproducibility without relying on broken external CDN hotlinks.
+        Downloads the real original image from direct URL and saves to data/raw/memes/.
+        Logs HTTP errors and continues without creating dummy images.
         """
-        raw_path = self.raw_img_dir / f"{meme_id}.png"
-        processed_path = self.processed_img_dir / f"{meme_id}.png"
+        parsed = urllib.parse.urlparse(image_url)
+        ext = os.path.splitext(parsed.path)[1].lower()
+        if not ext or ext not in self.ALLOWED_EXTENSIONS:
+            ext = ".jpg"
 
-        # Generate 600x600 canvas with political theme color
-        color_map = {
-            "Paslon 01 (AMIN)": "#1B4D3E",       # Emerald green
-            "Paslon 02 (Prabowo-Gibran)": "#5B92E5", # Sky blue
-            "Paslon 03 (Ganjar-Mahfud)": "#B22222",  # Deep red
-            "Satire / Netral": "#4A4A4A",         # Dark slate
-        }
-        bg_color = color_map.get(category, "#2D3748")
+        filename = f"{post_id}{ext}"
+        raw_path = self.raw_img_dir / filename
+        processed_path = self.processed_img_dir / filename
 
-        img = Image.new("RGB", (600, 600), color=bg_color)
-        draw = ImageDraw.Draw(img)
+        try:
+            self.rate_limiter.wait()
+            resp = requests.get(
+                image_url,
+                headers={"User-Agent": self.user_agent},
+                timeout=12,
+                stream=True,
+            )
+            resp.raise_for_status()
 
-        # Draw decorative inner border
-        draw.rectangle([(20, 20), (580, 580)], outline="#E2E8F0", width=4)
+            # Save real raw image
+            sha256_hash = hashlib.sha256()
+            with open(raw_path, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        sha256_hash.update(chunk)
 
-        # Draw top and bottom meme banners
-        draw.rectangle([(25, 25), (575, 120)], fill="#000000AA")
-        draw.rectangle([(25, 480), (575, 575)], fill="#000000AA")
+            # Mirror genuine image to processed directory
+            shutil.copyfile(raw_path, processed_path)
 
-        # Text banner
-        draw.text((40, 50), top_text.upper()[:45], fill="#FFFFFF")
-        draw.text((40, 510), bottom_text.upper()[:45], fill="#FFFF00")
-        draw.text((40, 300), f"[{category.upper()}]", fill="#E2E8F0")
+            return {
+                "filename": filename,
+                "relative_path": f"memes/{filename}",
+                "raw_path": str(raw_path),
+                "sha256": sha256_hash.hexdigest(),
+                "format": ext.replace(".", "").upper(),
+                "direct_url": image_url,
+            }
 
-        img.save(raw_path, format="PNG")
-        # Save identical or sanitized version into processed
-        img.save(processed_path, format="PNG")
-
-        return processed_path
-
-    def _compute_image_sha256(self, img_path: Path) -> str:
-        sha256_hash = hashlib.sha256()
-        with open(img_path, "rb") as f:
-            for block in iter(lambda: f.read(65536), b""):
-                sha256_hash.update(block)
-        return sha256_hash.hexdigest()
+        except requests.RequestException as e:
+            logger.error(f"HTTP error downloading original meme from {image_url}: {e}")
+            # Clean up partial file if any
+            if raw_path.exists():
+                raw_path.unlink()
+            if processed_path.exists():
+                processed_path.unlink()
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error saving image from {image_url}: {e}")
+            return None
 
     def fetch_records(self, limit: Optional[int] = None) -> Generator[Dict[str, Any], None, None]:
-        target = limit or 50
+        """
+        Harvests genuine memes from r/indonesiameme and r/indonesia using PRAW.
+        Filters for election keywords and direct image URLs.
+        """
+        if not self.reddit:
+            logger.error("PRAW Reddit client is not initialized. Skipping meme collection.")
+            return
+
         yielded_count = 0
+        target_limit = limit or 50
 
-        meme_templates = [
-            ("Paslon 01 (AMIN)", "KETIKA NANYA KEBIJAKAN PUBLIK DI DESAK ANIES", "TAPI MALAH DIKASIH KULIAH DUA JAM PENUH DATA", "abah_anies_bubble"),
-            ("Paslon 02 (Prabowo-Gibran)", "POKOKNYA JOGET GEMOY DULU AJA", "PROGRAM MAKAN SIANG GRATIS DAN HILIRISASI SIAP MELUNCUR", "gemoy_prabowo_dance"),
-            ("Paslon 03 (Ganjar-Mahfud)", "TABRAK PROF! LAWAN KECURANGAN", "PELURU TAK BERPENGARUH KALAU HUKUM DITEGAKKAN", "tabrak_prof_mahfud"),
-            ("Satire / Netral", "TIMSES DI MEDSOS SALING HUJAT POLARISASI", "NETIZEN BIASA CUMA PENGEN HARGA BERAS TURUN", "netizen_santai_bansos"),
-            ("Paslon 02 (Prabowo-Gibran)", "DEBAT CAWAPRES DITUNGGU-TUNGGU", "LANGSUNG GAS HILIRISASI DIGITAL DAN CRYPTO", "gibran_belimbing_sayur"),
-            ("Paslon 01 (AMIN)", "GERAKAN PERUBAHAN TIKET SUBSIDI", "KONSEP KOTA RAMAH SEPEDA KELAS DUNIA", "desak_anies_transjakarta"),
-            ("Satire / Netral", "SIREKAP KPU LAGI LOADING 99 PERCENT", "SUARA SATU KELURAHAN BISA MELEBIHI PENDUDUK KOTA", "sirekap_server_meme"),
-            ("Paslon 03 (Ganjar-Mahfud)", "BANSOS DITURUNKAN PAS BULAN PEMILU", "KITA TANYAKAN KE EMPAT MENTERI DI SIDANG MK", "sidang_mk_bansos_meme"),
-        ]
+        # Subreddits: indonesiameme and indonesia
+        subreddits = self.config.get("subreddits", self.TARGET_SUBREDDITS)
 
-        logger.info(f"[{self.name}] Harvesting multimodal political meme corpus (target={target})...")
+        logger.info(f"[{self.name}] Initiating genuine meme harvesting from subreddits: {subreddits}")
 
-        for i in range(target):
+        for sub_name in subreddits:
             if limit and yielded_count >= limit:
                 break
 
-            meme_id = f"meme_pemilu_{i+1:05d}"
-            if meme_id in self.processed_ids:
+            logger.info(f"[{self.name}] Querying subreddit: r/{sub_name}")
+            try:
+                sub = self.reddit.subreddit(sub_name)
+
+                # Search submissions matching election keywords
+                search_query = " OR ".join(self.KEYWORDS)
+                submissions_stream = sub.search(search_query, limit=target_limit, sort="relevance")
+
+                for submission in submissions_stream:
+                    if limit and yielded_count >= limit:
+                        break
+
+                    post_id = f"meme_{submission.id}"
+                    if post_id in self.processed_ids:
+                        continue
+
+                    title = getattr(submission, "title", "")
+                    selftext = getattr(submission, "selftext", "")
+                    url = getattr(submission, "url", "")
+
+                    # 1. Filter keywords on title or text
+                    matched_kws = self._matches_keywords(title, selftext)
+                    if not matched_kws:
+                        continue
+
+                    # 2. Filter direct image URLs only (.jpg, .png, .jpeg)
+                    if not self._is_direct_image_url(url):
+                        continue
+
+                    # 3. Download the original image to data/raw/memes/
+                    img_meta = self._download_original_image(url, post_id)
+                    if not img_meta:
+                        # HTTP error occurred - logged in _download_original_image, skip without dummy
+                        continue
+
+                    # 4. Extract author and timestamp
+                    author_name = submission.author.name if submission.author else "[deleted]"
+                    created_utc = getattr(submission, "created_utc", 0)
+                    dt_str = datetime.fromtimestamp(created_utc, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                    full_text = f"{title}. {selftext}".strip()
+
+                    record = {
+                        "id": post_id,
+                        "source": "memes",
+                        "title": title,
+                        "text": full_text,
+                        "caption": title,
+                        "author_username": author_name,
+                        "published_at": dt_str,
+                        "url": f"https://reddit.com{getattr(submission, 'permalink', '')}",
+                        "engagement": {
+                            "score": getattr(submission, "score", 0),
+                            "upvote_ratio": getattr(submission, "upvote_ratio", 1.0),
+                            "num_comments": getattr(submission, "num_comments", 0),
+                        },
+                        "image_metadata": {
+                            **img_meta,
+                            "matched_keywords": matched_kws,
+                            "subreddit": sub_name,
+                        },
+                        "metadata": {
+                            "platform": "reddit",
+                            "subreddit": sub_name,
+                            "flair": getattr(submission, "link_flair_text", None),
+                            "matched_keywords": matched_kws,
+                        },
+                    }
+
+                    self.processed_ids.add(post_id)
+                    yield record
+                    yielded_count += 1
+
+            except Exception as e:
+                logger.error(f"[{self.name}] HTTP or API error from r/{sub_name}: {e}. Continuing to next.")
                 continue
-
-            category, top, bottom, slug = meme_templates[i % len(meme_templates)]
-            caption = f"{top} - {bottom}"
-            full_text = f"Political Meme #{meme_id}: {caption}. Variasi diskursus visual nomor {i+1} kategori {category}. Analisis wacana visual humor elektoral Pemilu 2024."
-
-            # Render genuine image
-            img_path = self._render_meme_image(meme_id, top, bottom, category)
-            img_sha256 = self._compute_image_sha256(img_path)
-
-            date_samples = [
-                "2023-11-15T10:00:00Z",
-                "2023-12-14T08:30:00Z",
-                "2024-01-22T14:15:00Z",
-                "2024-02-14T11:45:00Z",
-                "2024-03-01T16:20:00Z",
-                "2024-04-18T09:00:00Z",
-            ]
-            pub_date = date_samples[i % len(date_samples)]
-
-            record = {
-                "id": meme_id,
-                "source": "memes",
-                "title": f"Meme Pemilu 2024: {slug}",
-                "text": full_text,
-                "caption": caption,
-                "author_username": f"meme_creator_{i % 30}",
-                "published_at": pub_date,
-                "url": f"https://reddit.com/r/indonesia/comments/{meme_id}",
-                "engagement": {
-                    "upvotes": 250 + (i * 17) % 1200,
-                    "shares": 60 + (i * 5) % 300,
-                    "comments": 40 + (i * 3) % 150,
-                },
-                "image_metadata": {
-                    "filename": f"{meme_id}.png",
-                    "relative_path": f"memes/{meme_id}.png",
-                    "width": 600,
-                    "height": 600,
-                    "format": "PNG",
-                    "sha256": img_sha256,
-                    "category": category,
-                    "polarization_target": category.split()[0],
-                },
-                "metadata": {
-                    "platform": "reddit_r_indonesia",
-                    "flair": "Meme",
-                    "meme_slug": slug,
-                },
-            }
-
-            self.processed_ids.add(meme_id)
-            yield record
-            yielded_count += 1
