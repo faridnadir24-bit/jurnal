@@ -2,7 +2,7 @@
 
 **License:** [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](LICENSE)  
 **Permanent DOI:** `https://doi.org/10.5281/zenodo.10242024`  
-**Code Version (Git Commit):** `unversioned_git_repo`  
+**Code Version (Git Commit):** `677f5aa0dd80acafd6639b69750bce4b5bef5de1`  
 **Release Date:** 2026-11-19  
 
 ---
@@ -44,7 +44,7 @@ This dataset was harvested using an automated, configuration-driven multi-platfo
   - Content falling outside the defined temporal window.
 
 ### D. Data Ethics & Anonymization
-- **Pseudonymization:** User handles hashed as `sha256(salt + username)` $ightarrow$ `anon_{hash[:16]}`. The salt is preserved securely to enable intra-dataset co-reference and network graphs without exposing user identities.
+- **Pseudonymization:** User handles hashed as `sha256(salt + username)` -> `anon_{hash[:16]}`. The salt is preserved securely to enable intra-dataset co-reference and network graphs without exposing user identities.
 - **In-Text PII Scrubbing:** Regular expressions replace Indonesian phone numbers with `[REDACTED_PHONE]`, email addresses with `[REDACTED_EMAIL]`, and `@mentions` with pseudonymized tokens.
 - **Sensitive Metadata Elimination:** IP addresses, profile pictures, and exact geolocation coordinates were purged prior to dataset release.
 

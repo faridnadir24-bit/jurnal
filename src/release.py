@@ -33,7 +33,10 @@ def generate_datasheet_markdown(config: ExperimentConfig, manifest: Optional[Dic
     """Generates Gebru et al. (2021) Datasheets for Datasets specification."""
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     git_info = manifest.get("code_version", {}) if manifest else {}
-    commit_hash = git_info.get("commit_hash", "HEAD")
+    commit_hash = git_info.get("commit_hash")
+    if not commit_hash or commit_hash == "unversioned_git_repo":
+        from src.manifest import get_git_info
+        commit_hash = get_git_info().get("commit_hash", "HEAD")
 
     return f"""# Datasheet for Dataset: Indonesian Presidential Election 2024 Political Polarization Dataset
 
@@ -140,7 +143,10 @@ def generate_readme_markdown(config: ExperimentConfig, manifest: Optional[Dict[s
     """Generates release README containing Methods section protocol & Data Availability Statement."""
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     git_info = manifest.get("code_version", {}) if manifest else {}
-    commit_hash = git_info.get("commit_hash", "HEAD")
+    commit_hash = git_info.get("commit_hash")
+    if not commit_hash or commit_hash == "unversioned_git_repo":
+        from src.manifest import get_git_info
+        commit_hash = get_git_info().get("commit_hash", "HEAD")
 
     return f"""# Indonesian Presidential Election 2024 Political Polarization Dataset
 
@@ -188,7 +194,7 @@ This dataset was harvested using an automated, configuration-driven multi-platfo
   - Content falling outside the defined temporal window.
 
 ### D. Data Ethics & Anonymization
-- **Pseudonymization:** User handles hashed as `sha256(salt + username)` $\rightarrow$ `anon_{{hash[:16]}}`. The salt is preserved securely to enable intra-dataset co-reference and network graphs without exposing user identities.
+- **Pseudonymization:** User handles hashed as `sha256(salt + username)` -> `anon_{{hash[:16]}}`. The salt is preserved securely to enable intra-dataset co-reference and network graphs without exposing user identities.
 - **In-Text PII Scrubbing:** Regular expressions replace Indonesian phone numbers with `[REDACTED_PHONE]`, email addresses with `[REDACTED_EMAIL]`, and `@mentions` with pseudonymized tokens.
 - **Sensitive Metadata Elimination:** IP addresses, profile pictures, and exact geolocation coordinates were purged prior to dataset release.
 

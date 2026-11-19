@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.env
+
+# Raw unreleased data (keep private)
+data/raw/
+data/checkpoints/
+
+# Release archives
+*.zip
