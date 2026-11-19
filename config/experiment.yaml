@@ -1,0 +1,232 @@
+# ==============================================================================
+# EXPERIMENT CONFIGURATION: Indonesian Political Opinion Polarization (Pemilu 2024)
+# Designed for Peer-Review Reproducibility, Open Science & Academic Data Ethics
+# ==============================================================================
+
+experiment:
+  title: "Multi-Platform Polarization Analysis of the 2024 Indonesian Presidential Election"
+  short_name: "pemilu2024_polarization"
+  version: "1.0.0"
+  research_lead: "Department of Political Science & Computational Social Science Laboratory"
+  contact_email: "research.pemilu2024@gmail.com"
+  license: "CC-BY-NC-4.0"
+  doi_placeholder: "10.5281/zenodo.10242024"
+
+# ------------------------------------------------------------------------------
+# Temporal Window (Pemilu 2024 Full Cycle)
+# ------------------------------------------------------------------------------
+temporal_window:
+  start_date: "2023-10-01"
+  end_date: "2024-04-30"
+  key_milestones:
+    - date: "2023-10-19"
+      event: "KPU Presidential Candidate Registration"
+    - date: "2023-11-28"
+      event: "Official Campaign Period Begins"
+    - date: "2023-12-12"
+      event: "Presidential Debate 1 (Law, Human Rights, Corruption)"
+    - date: "2023-12-22"
+      event: "Vice-Presidential Debate 1 (Economy, Trade, Infrastructure)"
+    - date: "2024-01-07"
+      event: "Presidential Debate 2 (Defense, Security, Geopolitics)"
+    - date: "2024-01-21"
+      event: "Vice-Presidential Debate 2 (Sustainable Development, Energy, Environment)"
+    - date: "2024-02-04"
+      event: "Presidential Debate 3 (Social Welfare, Education, Health, IT)"
+    - date: "2024-02-14"
+      event: "Voting Day (Election Day 2024)"
+    - date: "2024-03-20"
+      event: "Official National Vote Tabulation Announcement by KPU"
+    - date: "2024-04-22"
+      event: "Constitutional Court (MK) PHPU Dispute Ruling"
+
+# ------------------------------------------------------------------------------
+# Target Sampling Scale (Minimum quotas for academic validity)
+# ------------------------------------------------------------------------------
+quotas:
+  total_text_target: 10000
+  total_meme_target: 500
+  pilot_sample_per_source: 50
+  platforms:
+    youtube:
+      target: 4000
+      type: "text_comments_transcripts"
+    reddit:
+      target: 3500
+      type: "text_posts_comments"
+    gnews:
+      target: 3000
+      type: "news_articles"
+    memes:
+      target: 500
+      type: "image_visual_multimodal"
+
+# ------------------------------------------------------------------------------
+# Platform-Specific Queries & Extraction Parameters
+# ------------------------------------------------------------------------------
+sources:
+  youtube:
+    enabled: true
+    queries:
+      - "debat capres 2024 pemilu anies prabowo ganjar"
+      - "anies muhaimin pilpres 2024 koalisi perubahan"
+      - "prabowo gibran pemilu 2024 gemoy dinasti"
+      - "ganjar mahfud 2024 tabrak prof pemilu"
+      - "sidang sengketa pilpres mahkamah konstitusi 2024"
+      - "bansos dan pemilu 2024 politisasi"
+    max_comments_per_video: 150
+    include_transcripts: true
+    channels:
+      - "KompasTV"
+      - "Mata Najwa"
+      - "CNN Indonesia"
+      - "tvOneNews"
+
+  reddit:
+    enabled: true
+    subreddits:
+      - "indonesia"
+    queries:
+      - "pilpres 2024"
+      - "debat capres"
+      - "prabowo gibran"
+      - "anies baswedan"
+      - "ganjar mahfud"
+      - "dinasti politik"
+      - "bansos pemilu"
+      - "sengketa hasil pilpres MK"
+    include_comments: true
+    sort_orders:
+      - "relevance"
+      - "comments"
+      - "top"
+
+  gnews:
+    enabled: true
+    language: "id"
+    country: "ID"
+    queries:
+      - "pilpres 2024 polarisasi opini"
+      - "anies baswedan muhaimin iskandar pilpres 2024"
+      - "prabowo subianto gibran rakabuming pilpres 2024"
+      - "ganjar pranowo mahfud md pilpres 2024"
+      - "mahkamah konstitusi sengketa hasil pilpres 2024"
+      - "bansos jelang pemilu netralitas pemerintah"
+      - "sirekap kpu kontroversi perhitungan suara"
+
+  memes:
+    enabled: true
+    queries:
+      - "meme pemilu 2024"
+      - "meme prabowo gemoy"
+      - "meme anies abah"
+      - "meme ganjar mahfud"
+      - "meme fufufafa dinasti"
+      - "meme pilpres jokowi"
+    subreddits:
+      - "indonesia"
+    flair_filter:
+      - "Meme"
+      - "Humor"
+      - "Political"
+    download_images: true
+    min_image_width: 200
+    min_image_height: 200
+
+# ------------------------------------------------------------------------------
+# Inclusion & Exclusion Protocol (Methods Section Criteria)
+# ------------------------------------------------------------------------------
+preprocessing:
+  min_char_length: 15
+  max_char_length: 20000
+  drop_retweet_syntax: true
+  drop_url_only_posts: true
+  drop_duplicates: true
+  similarity_threshold: 0.95
+  language_filtering:
+    enabled: true
+    target_language: "id"
+    # Essential Indonesian function words used to confirm Indonesian vernacular / formal text
+    indonesian_markers:
+      - "yang"
+      - "dan"
+      - "di"
+      - "ini"
+      - "untuk"
+      - "dari"
+      - "dengan"
+      - "tidak"
+      - "gak"
+      - "ngga"
+      - "bisa"
+      - "akan"
+      - "ke"
+      - "karena"
+      - "ada"
+      - "sama"
+      - "kita"
+      - "juga"
+      - "sudah"
+      - "udah"
+      - "itu"
+      - "bukan"
+      - "capres"
+      - "cawapres"
+      - "pemilu"
+      - "pilpres"
+  bot_blacklist:
+    - "AutoModerator"
+    - "RemindMeBot"
+    - "TwitterBot"
+    - "bot"
+    - "[deleted]"
+    - "[removed]"
+
+# ------------------------------------------------------------------------------
+# Data Ethics & Anonymization Standards (CC-BY-NC 4.0 Compliance)
+# ------------------------------------------------------------------------------
+ethics:
+  anonymization_algorithm: "SHA-256"
+  # Salt can be specified here or via the SCRAPER_SALT environment variable
+  salt: "pemilu2024_academic_polarization_study_salt_reproducibility"
+  salt_length: 32
+  strip_fields:
+    - "author_email"
+    - "author_ip"
+    - "author_avatar_url"
+    - "user_profile_url"
+    - "phone_number"
+    - "exact_geo_coordinates"
+  anonymize_fields:
+    - "author_username"
+    - "author_id"
+    - "author_channel_id"
+    - "user_id"
+  scrub_text_pii:
+    enabled: true
+    regex_rules:
+      indonesian_phone: '(\+62|62|0)8[1-9][0-9]{6,11}'
+      email_address: '[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
+      social_mention: '@([A-Za-z0-9_]{3,25})'
+
+# ------------------------------------------------------------------------------
+# Rate Limiting & Network Policies (Polite Scraping)
+# ------------------------------------------------------------------------------
+network:
+  rate_limit_per_minute: 30
+  jitter_range_seconds: [0.5, 2.0]
+  max_retries: 5
+  backoff_multiplier: 2.0
+  timeout_seconds: 15
+  user_agent: "IndonesianPoliticalPolarizationStudy/1.0 (Academic Research for Journal Publication; contact: research.pemilu2024@gmail.com)"
+  respect_robots_txt: true
+
+# ------------------------------------------------------------------------------
+# Directory Layout
+# ------------------------------------------------------------------------------
+paths:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  release_dir: "data/release"
+  checkpoints_dir: "data/checkpoints"
+  manifests_dir: "manifests"
