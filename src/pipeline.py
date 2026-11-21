@@ -12,6 +12,7 @@ from src.adapters.gnews import GoogleNewsAdapter
 from src.adapters.reddit import RedditAdapter
 from src.adapters.youtube import YouTubeAdapter
 from src.adapters.meme import MemeAdapter
+from src.adapters.meme_dataset_loader import MemeDatasetLoader
 
 logger = logging.getLogger("scraper.pipeline")
 
@@ -113,6 +114,20 @@ class ScraperPipeline:
                 processed_img_dir=self.processed_dir / "memes",
             )
 
+        # 5. Public Meme Datasets (Hugging Face / Open Access)
+        if "meme_dataset" in all_sources or (self.sources_filter and "meme_dataset" in self.sources_filter):
+            adapters["meme_dataset"] = MemeDatasetLoader(
+                name="meme_dataset",
+                config=all_sources.get("meme_dataset", {}),
+                rate_limiter=self.rate_limiter,
+                checkpoints_dir=self.checkpoints_dir,
+                dry_run=self.dry_run,
+                raw_img_dir=self.raw_dir / "memes",
+                processed_img_dir=self.processed_dir / "memes",
+                raw_dir=self.raw_dir / "external",
+                processed_dir=self.processed_dir,
+            )
+
         return adapters
 
     def run(self) -> Dict[str, Any]:
@@ -164,6 +179,18 @@ class ScraperPipeline:
                         if not is_valid:
                             rejected_count += 1
                             rejection_reasons[reason] = rejection_reasons.get(reason, 0) + 1
+                            # Clean up rejected processed and raw images
+                            img_meta = raw_record.get("image_metadata") or {}
+                            fname = img_meta.get("filename")
+                            if fname:
+                                p_img = self.processed_dir / "memes" / fname
+                                r_img = self.raw_dir / "memes" / fname
+                                for f in [p_img, r_img]:
+                                    if f.exists():
+                                        try:
+                                            f.unlink()
+                                        except Exception:
+                                            pass
                             continue
 
                         # Apply Ethical Anonymization (SHA-256 + salt, PII scrub, strip fields)
@@ -172,7 +199,7 @@ class ScraperPipeline:
                         # Write to processed datasets
                         if not self.dry_run:
                             line = json.dumps(clean_record, ensure_ascii=False) + "\n"
-                            if source_name == "memes":
+                            if source_name in ["memes", "meme_dataset"]:
                                 memes_out.write(line)
                                 memes_out.flush()
                             else:

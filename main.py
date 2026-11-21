@@ -31,7 +31,7 @@ def main():
         "--source",
         type=str,
         nargs="+",
-        choices=["youtube", "reddit", "gnews", "memes"],
+        choices=["youtube", "reddit", "gnews", "memes", "meme_dataset"],
         help="Specific source(s) to harvest. Defaults to all enabled sources in config.",
     )
     parser.add_argument(
@@ -53,6 +53,11 @@ def main():
         "--export-release",
         action="store_true",
         help="Generate Zenodo/Figshare publication bundle (dataset.zip + README + LICENSE + datasheet.md).",
+    )
+    parser.add_argument(
+        "--simulate-quantum",
+        action="store_true",
+        help="Execute Quantum-Like cognitive opinion polarization model and generate comparative report.",
     )
 
     args = parser.parse_args()
@@ -107,7 +112,50 @@ def main():
         print("=" * 65 + "\n")
         sys.exit(0)
 
-    # 3. Action: Run Scraping Pipeline
+    # 3. Action: Run Quantum-Like Simulation (--simulate-quantum)
+    if args.simulate_quantum:
+        logger.info("Executing Quantum-Like Cognitive Polarization Simulation...")
+        from src.models.quantum_model import (
+            run_simulation,
+            run_classical_baseline,
+            plot_simulation_results,
+        )
+
+        text_file = Path(config.paths.processed_dir) / "posts.jsonl"
+        meme_file = Path(config.paths.processed_dir) / "memes.jsonl"
+        report_file = Path("reports") / "polarization_over_time.png"
+
+        q_res = run_simulation(
+            text_data_path=str(text_file) if text_file.is_file() else None,
+            meme_data_path=str(meme_file) if meme_file.is_file() else None,
+            time_steps=10,
+            population_size=100,
+            method="lindblad",
+        )
+        c_res = run_classical_baseline(
+            text_data_path=str(text_file) if text_file.is_file() else None,
+            meme_data_path=str(meme_file) if meme_file.is_file() else None,
+            time_steps=10,
+            population_size=100,
+        )
+        plot_simulation_results(
+            quantum_res=q_res,
+            classical_res=c_res,
+            output_path=str(report_file),
+        )
+
+        print("\n" + "=" * 65)
+        print("    QUANTUM-LIKE POLARIZATION SIMULATION COMPLETED")
+        print("=" * 65)
+        print(f"Report Graphic       : {report_file.resolve()}")
+        print(f"Initial Polarization : {q_res['polarization'][0]:.4f}")
+        print(f"Final Polarization   : {q_res['polarization'][-1]:.4f} (Classical: {c_res['polarization'][-1]:.4f})")
+        print(f"Final Asymmetry      : {q_res['asymmetry'][-1]:.4f} (Classical: {c_res['asymmetry'][-1]:.4f})")
+        print(f"Final Mean Coherence : {q_res['mean_coherence'][-1]:.4f}")
+        print("=" * 65 + "\n")
+        sys.exit(0)
+
+    # 4. Action: Run Scraping Pipeline
     pipeline = ScraperPipeline(
         config=config,
         config_path=str(config_path),

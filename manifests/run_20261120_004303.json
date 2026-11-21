@@ -1,0 +1,291 @@
+{
+  "run_id": "run_20261120_004303",
+  "experiment_title": "Multi-Platform Polarization Analysis of the 2024 Indonesian Presidential Election",
+  "timestamps": {
+    "start": "2026-11-20T00:43:03.888536+00:00",
+    "end": "2026-11-20T00:45:50.026934+00:00",
+    "duration_seconds": 166.14
+  },
+  "code_version": {
+    "commit_hash": "dff4548f52273b85cb2c11dab01d66a66d973f67",
+    "branch": "master",
+    "is_dirty": true
+  },
+  "config_sha256": "2a0e22039f8f0f493d5cb36a77f4748e5b046299b90974152c4acc43a2429778",
+  "parameters": {
+    "temporal_window": {
+      "start_date": "2023-10-01",
+      "end_date": "2024-04-30",
+      "key_milestones": [
+        {
+          "date": "2023-10-19",
+          "event": "KPU Presidential Candidate Registration"
+        },
+        {
+          "date": "2023-11-28",
+          "event": "Official Campaign Period Begins"
+        },
+        {
+          "date": "2023-12-12",
+          "event": "Presidential Debate 1 (Law, Human Rights, Corruption)"
+        },
+        {
+          "date": "2023-12-22",
+          "event": "Vice-Presidential Debate 1 (Economy, Trade, Infrastructure)"
+        },
+        {
+          "date": "2024-01-07",
+          "event": "Presidential Debate 2 (Defense, Security, Geopolitics)"
+        },
+        {
+          "date": "2024-01-21",
+          "event": "Vice-Presidential Debate 2 (Sustainable Development, Energy, Environment)"
+        },
+        {
+          "date": "2024-02-04",
+          "event": "Presidential Debate 3 (Social Welfare, Education, Health, IT)"
+        },
+        {
+          "date": "2024-02-14",
+          "event": "Voting Day (Election Day 2024)"
+        },
+        {
+          "date": "2024-03-20",
+          "event": "Official National Vote Tabulation Announcement by KPU"
+        },
+        {
+          "date": "2024-04-22",
+          "event": "Constitutional Court (MK) PHPU Dispute Ruling"
+        }
+      ]
+    },
+    "sources_queried": {
+      "youtube": {
+        "enabled": true,
+        "queries": [
+          "debat capres 2024 pemilu anies prabowo ganjar",
+          "anies muhaimin pilpres 2024 koalisi perubahan",
+          "prabowo gibran pemilu 2024 gemoy dinasti",
+          "ganjar mahfud 2024 tabrak prof pemilu",
+          "sidang sengketa pilpres mahkamah konstitusi 2024",
+          "bansos dan pemilu 2024 politisasi"
+        ],
+        "max_comments_per_video": 150,
+        "include_transcripts": true,
+        "channels": [
+          "KompasTV",
+          "Mata Najwa",
+          "CNN Indonesia",
+          "tvOneNews"
+        ]
+      },
+      "reddit": {
+        "enabled": true,
+        "subreddits": [
+          "indonesiameme",
+          "indonesia"
+        ],
+        "queries": [
+          "pilpres 2024",
+          "debat capres",
+          "prabowo gibran",
+          "anies baswedan",
+          "ganjar mahfud",
+          "dinasti politik",
+          "bansos pemilu",
+          "sengketa hasil pilpres MK"
+        ],
+        "include_comments": true,
+        "sort_orders": [
+          "relevance",
+          "comments",
+          "top"
+        ]
+      },
+      "gnews": {
+        "enabled": true,
+        "language": "id",
+        "country": "ID",
+        "queries": [
+          "pilpres 2024 polarisasi opini",
+          "anies baswedan muhaimin iskandar pilpres 2024",
+          "prabowo subianto gibran rakabuming pilpres 2024",
+          "ganjar pranowo mahfud md pilpres 2024",
+          "mahkamah konstitusi sengketa hasil pilpres 2024",
+          "bansos jelang pemilu netralitas pemerintah",
+          "sirekap kpu kontroversi perhitungan suara"
+        ]
+      },
+      "memes": {
+        "enabled": true,
+        "queries": [
+          "meme pemilu 2024",
+          "meme prabowo gemoy",
+          "meme anies abah",
+          "meme ganjar mahfud",
+          "meme fufufafa dinasti",
+          "meme pilpres jokowi"
+        ],
+        "subreddits": [
+          "indonesiameme",
+          "indonesia"
+        ],
+        "flair_filter": [
+          "Meme",
+          "Humor",
+          "Political"
+        ],
+        "download_images": true,
+        "min_image_width": 200,
+        "min_image_height": 200
+      },
+      "meme_dataset": {
+        "enabled": true,
+        "keywords": [
+          "indonesian meme",
+          "political meme indonesia",
+          "meme pemilu"
+        ],
+        "default_repos": [
+          "wittalistiyaningrum/corpus-text-meme-indonesia",
+          "wittalistiyaningrum/corpus-image-meme-indonesia"
+        ],
+        "download_images": true
+      }
+    },
+    "preprocessing_criteria": {
+      "min_char_length": 15,
+      "max_char_length": 20000,
+      "drop_retweet_syntax": true,
+      "drop_url_only_posts": true,
+      "drop_duplicates": true,
+      "similarity_threshold": 0.95,
+      "language_filtering": {
+        "enabled": true,
+        "target_language": "id",
+        "indonesian_markers": [
+          "yang",
+          "dan",
+          "di",
+          "ini",
+          "untuk",
+          "dari",
+          "dengan",
+          "tidak",
+          "gak",
+          "ngga",
+          "bisa",
+          "akan",
+          "ke",
+          "karena",
+          "ada",
+          "sama",
+          "kita",
+          "juga",
+          "sudah",
+          "udah",
+          "itu",
+          "bukan",
+          "capres",
+          "cawapres",
+          "pemilu",
+          "pilpres"
+        ]
+      },
+      "bot_blacklist": [
+        "AutoModerator",
+        "RemindMeBot",
+        "TwitterBot",
+        "bot",
+        "[deleted]",
+        "[removed]"
+      ]
+    },
+    "ethics_criteria": {
+      "anonymization_algorithm": "SHA-256",
+      "salt": "pemilu2024_academic_polarization_study_salt_reproducibility",
+      "salt_length": 32,
+      "strip_fields": [
+        "author_email",
+        "author_ip",
+        "author_avatar_url",
+        "user_profile_url",
+        "phone_number",
+        "exact_geo_coordinates"
+      ],
+      "anonymize_fields": [
+        "author_username",
+        "author_id",
+        "author_channel_id",
+        "user_id"
+      ],
+      "scrub_text_pii": {
+        "enabled": true,
+        "regex_rules": {
+          "indonesian_phone": "(\\+62|62|0)8[1-9][0-9]{6,11}",
+          "email_address": "[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+",
+          "social_mention": "@([A-Za-z0-9_]{3,25})"
+        }
+      }
+    }
+  },
+  "statistics_by_source": {
+    "meme_dataset": {
+      "raw_collected": 500,
+      "processed_accepted": 465,
+      "rejected": 35,
+      "rejection_breakdown": {
+        "OUTSIDE_TEMPORAL_WINDOW (2023-09-29T03:05:09Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2023-08-28T07:36:06Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2023-08-16T06:10:35Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2023-05-15T10:39:07Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2023-05-06T14:48:28Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2023-01-03T07:01:51Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2022-11-26T08:45:28Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2022-11-02T04:32:30Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2022-10-02T22:50:42Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2022-08-01T02:48:00Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2022-06-22T12:03:10Z)": 1,
+        "NON_INDONESIAN_LANGUAGE": 3,
+        "OUTSIDE_TEMPORAL_WINDOW (2022-05-13T06:07:01Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2021-08-10T11:27:55Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2021-08-09T08:53:32Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2021-06-27T13:49:47Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2020-08-24T05:17:00Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2020-07-01T04:20:37Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2020-02-06T11:42:44Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2020-02-04T04:01:35Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2020-01-06T11:44:12Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2019-11-20T11:46:33Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2019-11-11T09:01:02Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2019-08-15T05:16:32Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2019-07-17T23:39:43Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2019-04-08T04:39:51Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2019-04-04T07:40:27Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2019-01-19T01:14:39Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2018-08-29T06:00:37Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2018-05-25T14:49:52Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2018-04-30T06:48:48Z)": 1,
+        "OUTSIDE_TEMPORAL_WINDOW (2024-08-15T14:04:36Z)": 1,
+        "DUPLICATE_CONTENT": 1
+      }
+    }
+  },
+  "dataset_checksums": {
+    "processed_posts": {
+      "path": "data/processed/posts.jsonl",
+      "sha256": "9296c9253679b2c849bfcc52829c6982192b2fdd123278d0658f72891d8f43b8",
+      "size_bytes": 121050
+    },
+    "processed_memes": {
+      "path": "data/processed/memes.jsonl",
+      "sha256": "3cf9320bb8f6e14fbf2626bbe201f43c4f4a22397d4918a0bbc0229dc27158f6",
+      "size_bytes": 801491
+    }
+  },
+  "environment": {
+    "python_version": "3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "os": "Windows"
+  }
+}

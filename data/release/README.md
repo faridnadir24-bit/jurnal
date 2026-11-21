@@ -2,8 +2,8 @@
 
 **License:** [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](LICENSE)  
 **Permanent DOI:** `https://doi.org/10.5281/zenodo.10242024`  
-**Code Version (Git Commit):** `677f5aa0dd80acafd6639b69750bce4b5bef5de1`  
-**Release Date:** 2026-11-19  
+**Code Version (Git Commit):** `dff4548f52273b85cb2c11dab01d66a66d973f67`  
+**Release Date:** 2026-11-20  
 
 ---
 
@@ -50,7 +50,7 @@ This dataset was harvested using an automated, configuration-driven multi-platfo
 
 ### E. Limitations & Access Boundaries
 - **Platform Constraints:** Direct API rate limits and terms of service prevented scraping platforms with closed authentication walls (e.g., private TikTok or Instagram feeds). For multimodal political memes, images were collected from public forums and representative curated templates.
-- **Content Mutability:** Data represents a snapshot captured during the research run. Posts modified or deleted by users after the collection date (2026-11-19) are not retroactively updated.
+- **Content Mutability:** Data represents a snapshot captured during the research run. Posts modified or deleted by users after the collection date (2026-11-20) are not retroactively updated.
 
 ---
 

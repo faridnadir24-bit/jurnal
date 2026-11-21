@@ -45,7 +45,7 @@ temporal_window:
 # ------------------------------------------------------------------------------
 quotas:
   total_text_target: 10000
-  total_meme_target: 500
+  total_meme_target: 3000
   pilot_sample_per_source: 50
   platforms:
     youtube:
@@ -58,8 +58,11 @@ quotas:
       target: 3000
       type: "news_articles"
     memes:
-      target: 500
+      target: 3000
       type: "image_visual_multimodal"
+    meme_dataset:
+      target: 3000
+      type: "public_hf_memes"
 
 # ------------------------------------------------------------------------------
 # Platform-Specific Queries & Extraction Parameters
@@ -134,6 +137,17 @@ sources:
     download_images: true
     min_image_width: 200
     min_image_height: 200
+
+  meme_dataset:
+    enabled: true
+    keywords:
+      - "indonesian meme"
+      - "political meme indonesia"
+      - "meme pemilu"
+    default_repos:
+      - "wittalistiyaningrum/corpus-text-meme-indonesia"
+      - "wittalistiyaningrum/corpus-image-meme-indonesia"
+    download_images: true
 
 # ------------------------------------------------------------------------------
 # Inclusion & Exclusion Protocol (Methods Section Criteria)

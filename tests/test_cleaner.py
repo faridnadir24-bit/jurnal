@@ -100,3 +100,124 @@ def test_reject_duplicate_content(cleaner):
     assert valid1 is True
     assert valid2 is False
     assert "DUPLICATE_CONTENT" in reason2
+
+
+def test_accept_political_meme(cleaner):
+    rec = {
+        "source": "meme_dataset",
+        "caption": "Meme kocak respon debat capres cawapres pilpres 2024",
+        "text": "Diskusi elektoral prabowo gibran anies ganjar mahfud di media sosial.",
+        "author_username": "meme_creator",
+        "published_at": "2024-02-14T12:00:00Z",
+        "image_metadata": {"filename": "meme_capres.jpg"},
+    }
+    is_valid, reason = cleaner.evaluate(rec)
+    assert is_valid is True
+    assert reason is None
+
+
+def test_reject_irrelevant_meme_cat(cleaner):
+    rec = {
+        "source": "meme_dataset",
+        "caption": "Kucing lucu ini sangat menggemaskan saat tidur di atas kasur empuk.",
+        "text": "Meme humor kucing lucu hari ini tidak ada kaitan sama sekali.",
+        "author_username": "cat_lover",
+        "published_at": "2024-02-14T12:00:00Z",
+        "image_metadata": {"filename": "cat_meme.jpg"},
+    }
+    is_valid, reason = cleaner.evaluate(rec)
+    assert is_valid is False
+    assert reason == "IRRELEVANT_POLITICAL_CONTEXT"
+
+
+def test_reject_empty_caption_meme(cleaner):
+    rec = {
+        "source": "meme_dataset",
+        "caption": "",
+        "text": "",
+        "author_username": "user_empty",
+        "published_at": "2024-02-14T12:00:00Z",
+        "image_metadata": {"filename": "empty.jpg"},
+    }
+    is_valid, reason = cleaner.evaluate(rec)
+    assert is_valid is False
+    assert reason == "IRRELEVANT_POLITICAL_CONTEXT"
+
+
+def test_reject_irrelevant_ocr_context_meme(cleaner):
+    # False positive from CLIP (prob > 0.5) but OCR text is about days of the week ("Senin Selasa...")
+    rec = {
+        "source": "meme_dataset",
+        "caption": "",
+        "text": "",
+        "author_username": "meme_user",
+        "published_at": "2024-02-14T12:00:00Z",
+        "image_metadata": {
+            "filename": "monday_meme.jpg",
+            "is_political_visual": True,
+            "clip_political_prob": 0.88,
+            "ocr_text": "Senin Selasa Rabu Kamis Jumat Sabtu Minggu libur selesai",
+        },
+    }
+    is_valid, reason = cleaner.evaluate(rec)
+    assert is_valid is False
+    assert reason == "IRRELEVANT_OCR_CONTEXT"
+
+
+def test_accept_meme_via_ocr_text(cleaner):
+    # Meme with minimal caption but OCR text contains verified political election keyword
+    rec = {
+        "source": "meme_dataset",
+        "caption": "",
+        "text": "",
+        "author_username": "meme_user",
+        "published_at": "2024-02-14T12:00:00Z",
+        "image_metadata": {
+            "filename": "prabowo_meme.jpg",
+            "is_political_visual": True,
+            "clip_political_prob": 0.95,
+            "ocr_text": "Ayo rakyat Indonesia nyoblos capres prabowo gibran pemilu 2024",
+        },
+    }
+    is_valid, reason = cleaner.evaluate(rec)
+    assert is_valid is True
+    assert reason is None
+    assert "Meme OCR:" in rec["text"]
+
+
+def test_expanded_political_keywords_and_boundaries(cleaner):
+    # Verify new election terms, candidate slang, and party names
+    assert cleaner.contains_political_keyword("Dukungan penuh untuk paslon prabowo-gibran") is True
+    assert cleaner.contains_political_keyword("Ayo kawal suara paslon AMIN di TPS") is True
+    assert cleaner.contains_political_keyword("Caleg DPR kampanye dan bagi-bagi bansos") is True
+    assert cleaner.contains_political_keyword("Perdebatan panas antara pendukung paslon 01 dan 02") is True
+    assert cleaner.contains_political_keyword("Surat suara pilpres di coblos oleh warga") is True
+
+    # Verify resistance to substring collisions and non-election topics
+    assert cleaner.contains_political_keyword("Pemerintah menyarankan asupan vitamin harian") is False
+    assert cleaner.contains_political_keyword("Warga panik saat mendengar suara sirine") is False
+    assert cleaner.contains_political_keyword("Donald Trump mantan presiden Amerika Serikat") is False
+    assert cleaner.contains_political_keyword("Makan siang di Marshanies Kitchen sangat lezat") is False
+
+
+def test_reject_negative_keyword_memes(cleaner):
+    # Reject poster buang sampah (even if visual prob high)
+    rec_trash = {
+        "source": "meme_dataset",
+        "caption": "Gambar tersebut menunjukkan sebuah poster pesan tentang kebersihan dan membuang sampah pada tempatnya.",
+        "text": "",
+        "author_username": "user_trash",
+        "published_at": "2024-02-14T12:00:00Z",
+        "image_metadata": {
+            "filename": "trash.jpg",
+            "is_political_visual": True,
+            "clip_political_prob": 0.99,
+            "ocr_text": "ORANG SAMPAH Pada TEMPATNYA BUANG BIJAK",
+        },
+    }
+    is_valid, reason = cleaner.evaluate(rec_trash)
+    assert is_valid is False
+    assert reason == "IRRELEVANT_POLITICAL_CONTEXT"
+
+
+

@@ -93,6 +93,6 @@ Packaged as a compressed archive (`dataset.zip`) deposited in open scientific re
 
 ### Who is supporting/maintaining the dataset?
 Maintained by the original research team.
-- **Version**: `1.0.0` (Code commit: `677f5aa0dd80acafd6639b69750bce4b5bef5de1`)
-- **Datasheet Revision Date**: `2026-11-19`
+- **Version**: `1.0.0` (Code commit: `dff4548f52273b85cb2c11dab01d66a66d973f67`)
+- **Datasheet Revision Date**: `2026-11-20`
 - **Errata and Contact**: Inquiries or errata should be directed to `research.pemilu2024@gmail.com`.
